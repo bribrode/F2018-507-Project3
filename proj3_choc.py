@@ -106,7 +106,7 @@ def check_data_csv(rowList, index):
         return rowList[index][:-1]
     elif index == 5 or index == 8:
         if rowList[index] == "Unknown":
-            return None
+            return "Unknown"
         else:
             conn = sqlite3.connect(DBNAME)
             cur = conn.cursor()
@@ -156,35 +156,131 @@ def populate_bars(bar_csv):
 
 # Part 2: Implement logic to process user commands
 def process_command(command):
+    conn = sqlite3.connect(DBNAME)
+    cur = conn.cursor()
+
     queryList = []
+    possibleParams = ["sellcountry", "sourcecountry", "sellregion", "sourceregion", "top", "bottom"]
     commandList = command.split()
-    if commandList[0].lower() == "bars":
-        if len(commandList) > 1:
-            print("here!")
-            for x in range(1,len(commandList)-1):
-                if commandList[x][1:11].lower() == "sellcountry":
-                    print("sell country")
-                elif commandList[x][0:13].lower() == "sourcecountry":
-                    print("sourcecountry")
-                elif commandList[x][0:10].lower() == "sellregion":
-                    print("sellregion")
-                elif commandList[x][0:12].lower() == "sourceregion":
-                    print("sourceregion")
+    limitSearch = False
+    sortBy = "b.Rating"
+    sortOrder = "desc"
+    limit = 10
+    countryType = ""
+    placeType = ""
+    placeName = ""
 
 
-            ###sellcountry=alpha2, sourcecountry=alpha2, sellregion=name, sourceregion=name (default none)
-            ###ratings | cocoa (default ratings)
-            ###top=limit | bottom=limit (default = 10)
-        print("bars!")
-    elif commandList[0].lower() == "companies":
-        print("companies!")
-    elif commandList[0].lower() == "countries":
-        print("countries!")
-    elif commandList[0].lower() == "regions":
-        print("regions!")
+    if commandList:
+        if commandList[0] == "bars":
+            if len(commandList) > 1:
+                for x in range(1,len(commandList)):
+                    if commandList[x] != "ratings" and commandList[x] != "cocoa":
+                        try:
+                            currParams = commandList[x].split("=")
+                        except:
+                            print("Command Not Recognized: " + command)
+                            return queryList
+                        if currParams[0] in possibleParams:
+                            if len(currParams) != 2:
+                                print("Command Not Recognized: " + command)
+                                return queryList
+                        else:
+                            print("Command Not Recognized: " + command)
+                            return queryList
+                for x in range(1,len(commandList)):
+                    if commandList[x] == "ratings":
+                        sortBy = "b.Rating"
+                    elif commandList[x] == "cocoa":
+                        sortBy = "b.CocoaPercent"
+                    else:
+                        currParams = commandList[x].split("=")
+                        if currParams[0] == "top":
+                            sortOrder = "desc"
+                            limit = currParams[1]
+                        elif currParams[0] == "bottom":
+                            sortOrder = "asc"
+                            limit = currParams[1]
+                        elif currParams[0] == "sellcountry":
+                            limitSearch = True
+                            countryType = "sell"
+                            placeType = "country"
+                            placeName = currParams[1]
+                        elif currParams[0] == "sourcecountry":
+                            limitSearch = True
+                            countryType = "source"
+                            placeType = "country"
+                            placeName = currParams[1]
+                        elif currParams[0] == "sellregion":
+                            limitSearch = True
+                            countryType = "sell"
+                            placeType = "region"
+                            placeName = currParams[1]
+                        elif currParams[0] == "sourceregion":
+                            limitSearch = True
+                            countryType = "source"
+                            placeType = "region"
+                            placeName = currParams[1]
+
+            ###query the database
+
+
+            if limitSearch:
+
+                statement = 'SELECT b.SpecificBeanBarName, b.Company, sell.EnglishName, b.Rating, b.CocoaPercent, source.EnglishName '
+                statement += 'FROM Bars as b LEFT JOIN Countries as sell ON b.CompanyLocationId = sell.Id '
+                statement += 'LEFT JOIN Countries as source ON b.BroadBeanOriginId = source.Id '
+                statement += 'GROUP BY b.Id '
+                statement += 'HAVING {} = "{}" '
+                statement += 'ORDER BY {} {} '
+                statement += 'LIMIT {} '
+
+                if placeType == "country":
+                    if countryType == "sell":
+                        typeofPlace = "sell.Alpha2"
+                    else:
+                        typeofPlace = "source.Alpha2"
+                else:
+                    if countryType == "sell":
+                        typeofPlace = "sell.Region"
+                    else:
+                        typeofPlace = "source.Region"
+
+                print(typeofPlace + " " + placeName + " " + sortBy + " " + sortOrder + " " + str(limit))
+                cur.execute(statement.format(typeofPlace, placeName, sortBy, sortOrder, limit))
+            else:
+                statement = 'SELECT b.SpecificBeanBarName, b.Company, sell.EnglishName, b.Rating, b.CocoaPercent, source.EnglishName '
+                statement += 'FROM Bars as b LEFT JOIN Countries as sell ON b.CompanyLocationId = sell.Id '
+                statement += 'LEFT JOIN Countries as source ON b.BroadBeanOriginId = source.Id '
+                statement += 'ORDER BY {} {} '
+                statement += 'LIMIT {} '
+                cur.execute(statement.format(sortBy, sortOrder, limit))
+
+            for row in cur:
+                queryList.append(row)
+
+            #handle bars parameters
+        elif commandList[0] == "companies":
+            pass
+            #handle companies parameters
+            ##Company, company location, requested aggregation
+        elif commandList[0] == "countries":
+            pass
+            #handle countries parameters
+        elif commandList[0] == "regions":
+            pass
+            #handle regions parameters
+        else:
+            print("Command Not Recognized: " + command)
+            return queryList
     else:
-        print("Please enter a valid command")
+        return queryList
 
+
+    for item in queryList:
+        print(item)
+
+    conn.close()
     return queryList
 
 
@@ -204,6 +300,8 @@ def interactive_prompt():
             continue
         else:
             process_command(response)
+
+    print("Goodbye!")
 
 # Make sure nothing runs or prints out when this file is run as a module
 if __name__=="__main__":
