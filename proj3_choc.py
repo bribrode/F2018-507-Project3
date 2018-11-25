@@ -16,9 +16,12 @@ DBNAME = 'choc.db'
 BARSCSV = 'flavors_of_cacao_cleaned.csv'
 COUNTRIESJSON = 'countries.json'
 
+###############################
+###############################
+##Parameter: database filename
 ##Wipes tables from database if they exist and (re)builds the tables
-def create_db():
-    conn = sqlite3.connect(DBNAME)
+def create_db(database):
+    conn = sqlite3.connect(databse)
     cur = conn.cursor()
 
     ##WIPE THE DB
@@ -61,15 +64,20 @@ def create_db():
     conn.commit()
     conn.close()
 
-##Checks to see if value is in JSON Database, if it is not, returns NULL
-##Simply to avoid writing out repeated checks
+###############################
+###############################
+##Helper fxn for populating the Countries table
+##Checks to see if value is in JSON Database, if it is not, returns None
+##Simply to avoid writing out repeated checks, ensures that database will have Null value instead of empty string
 def check_data_json(dictName, keyName):
     if not dictName[keyName]:
         return None
     else:
         return dictName[keyName]
 
-##Read info from country JSON and appropriately insert into table
+###############################
+###############################
+##Reads info from Countries JSON and appropriately inserts into table
 def populate_countries(country_json):
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
@@ -94,8 +102,9 @@ def populate_countries(country_json):
     conn.commit()
     conn.close()
 
-
-##Clean handling of csv data
+###############################
+###############################
+##Helper fxn for clean handling of Bars csv data
 ##Returns value as None if not in csv
 ##Strips % from percentage data
 ##Pulls foreign keys for Countries
@@ -122,8 +131,8 @@ def check_data_csv(rowList, index):
     else:
         return rowList[index]
 
-
-
+###############################
+###############################
 ##Read info from country JSON and appropriately insert into table
 def populate_bars(bar_csv):
     conn = sqlite3.connect(DBNAME)
@@ -153,28 +162,34 @@ def populate_bars(bar_csv):
     conn.close()
 
 
-
 # Part 2: Implement logic to process user commands
+###############################
+###############################
+##Parameter - command string entered by user
+##Gracefully handles invalid commands
+##appropriately handles valid commands - (bars, countries, companies, regions) and their parameters
 def process_command(command):
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
 
     queryList = []
-    possibleParams = ["sellcountry", "sourcecountry", "sellregion", "sourceregion", "top", "bottom"]
     commandList = command.split()
-    limitSearch = False
-    sortBy = "b.Rating"
-    sortOrder = "desc"
-    limit = 10
-    countryType = ""
-    placeType = ""
-    placeName = ""
-
 
     if commandList:
         ##Bars Command handling
         if commandList[0] == "bars":
+            possibleParams = ["sellcountry", "sourcecountry", "sellregion", "sourceregion", "top", "bottom"]
+            limitSearch = False
+            sortBy = "b.Rating"
+            sortOrder = "desc"
+            limit = 10
+            countryType = ""
+            placeType = ""
+            placeName = ""
+
             if len(commandList) > 1:
+
+                ##Check to see if all commands entered are valid
                 for x in range(1,len(commandList)):
                     if commandList[x] != "ratings" and commandList[x] != "cocoa":
                         try:
@@ -189,6 +204,8 @@ def process_command(command):
                         else:
                             print("Command Not Recognized: " + command)
                             return queryList
+
+                ##Assign variables to represent each command entered
                 for x in range(1,len(commandList)):
                     if commandList[x] == "ratings":
                         sortBy = "b.Rating"
@@ -223,6 +240,7 @@ def process_command(command):
                             placeType = "region"
                             placeName = currParams[1]
 
+            ##Complete Bars Query
             if limitSearch:
                 statement = 'SELECT b.SpecificBeanBarName, b.Company, sell.EnglishName, b.Rating, b.CocoaPercent, source.EnglishName '
                 statement += 'FROM Bars as b LEFT JOIN Countries as sell ON b.CompanyLocationId = sell.Id '
@@ -244,6 +262,7 @@ def process_command(command):
                         typeofPlace = "source.Region"
 
                 cur.execute(statement.format(typeofPlace, placeName, sortBy, sortOrder, limit))
+
             else:
                 statement = 'SELECT b.SpecificBeanBarName, b.Company, sell.EnglishName, b.Rating, b.CocoaPercent, source.EnglishName '
                 statement += 'FROM Bars as b LEFT JOIN Countries as sell ON b.CompanyLocationId = sell.Id '
@@ -266,6 +285,8 @@ def process_command(command):
             limitSearch = False
 
             if len(commandList) > 1:
+
+                ##Check to see if all commands entered are valid
                 for x in range(1,len(commandList)):
                     if commandList[x] != "ratings" and commandList[x] != "cocoa" and commandList[x] != "bars_sold":
                         try:
@@ -281,6 +302,7 @@ def process_command(command):
                             print("Command Not Recognized: " + command)
                             return queryList
 
+                ##Assign variables representing entered commands
                 for x in range(1,len(commandList)):
                     if commandList[x] == "ratings":
                         sortBy = "AVG(Bars.Rating)"
@@ -305,6 +327,7 @@ def process_command(command):
                             placeType = "region"
                             placeName = currParams[1]
 
+            ##Complete Company query
             if limitSearch:
                 statement = 'SELECT Bars.Company, Countries.EnglishName, {} '
                 statement += 'FROM Bars LEFT JOIN Countries ON Bars.CompanyLocationId = Countries.Id '
@@ -333,6 +356,7 @@ def process_command(command):
             for row in cur:
                 queryList.append(row)
 
+        ##Countries Command Handling
         elif commandList[0] == "countries":
             possibleParams = ["region", "top", "bottom"]
             limit = 10
@@ -343,8 +367,9 @@ def process_command(command):
             limitSearch = False
             group = "Bars.CompanyLocationId"
 
-
             if len(commandList) > 1:
+
+                ##Check to see if all commands entered are valid
                 for x in range(1,len(commandList)):
                     if commandList[x] != "ratings" and commandList[x] != "cocoa" and commandList[x] != "bars_sold" and commandList[x] != "sellers" and commandList[x] != "sources":
                         try:
@@ -360,6 +385,7 @@ def process_command(command):
                             print("Command Not Recognized: " + command)
                             return queryList
 
+                ##Assign variables representing entered commands
                 for x in range(1,len(commandList)):
                     if commandList[x] == "ratings":
                         sortBy = "AVG(Bars.Rating)"
@@ -385,6 +411,7 @@ def process_command(command):
                             limitSearch = True
                             placeName = currParams[1]
 
+            ##Complete Countries Query
             if limitSearch:
                 statement = 'SELECT Countries.EnglishName, Countries.Region, {} '
                 statement += 'FROM Bars LEFT JOIN Countries ON {} '
@@ -406,27 +433,10 @@ def process_command(command):
 
                 cur.execute(statement.format(sortBy, placeType, group, sortBy, sortOrder, limit))
 
-
-
-
-                ########NOT PASSING THE LAST COUNTRIES TEST ##################
-                #############################################################
-                #############################################################
-                #############################################################
-                #############################################################
-                #############################################################
-                #############################################################
-                #############################################################
-                #############################################################
-                #############################################################
-                #############################################################
-                #############################################################
-                #############################################################
-                #############################################################
-                #############################################################
             for row in cur:
                 queryList.append(row)
-                #handle countries parameters
+
+        ##Regions Command Handling
         elif commandList[0] == "regions":
             pass
             #handle regions parameters
@@ -455,7 +465,7 @@ def interactive_prompt():
     help_text = load_help_text()
     response = ''
     while response != 'exit':
-        response = input('Enter a command: ')
+        response = input('\nEnter a command: ')
 
         if response == 'help':
             print(help_text)
@@ -467,7 +477,7 @@ def interactive_prompt():
 
 # Make sure nothing runs or prints out when this file is run as a module
 if __name__=="__main__":
-    create_db()
+    create_db(DBNAME)
     populate_countries(COUNTRIESJSON)
     populate_bars(BARSCSV)
     interactive_prompt()
