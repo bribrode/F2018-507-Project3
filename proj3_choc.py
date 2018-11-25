@@ -88,7 +88,7 @@ def populate_countries(country_json):
 
             vals = (None, alpha2, alpha3, engName, region, subregion, pop, area)
 
-            statement = 'INSERT INTO "Countries" VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            statement = "INSERT INTO 'Countries' VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
             cur.execute(statement, vals)
 
     conn.commit()
@@ -106,12 +106,12 @@ def check_data_csv(rowList, index):
         return rowList[index][:-1]
     elif index == 5 or index == 8:
         if rowList[index] == "Unknown":
-            return "Unknown"
+            return None
         else:
             conn = sqlite3.connect(DBNAME)
             cur = conn.cursor()
 
-            statement = 'SELECT Id FROM "Countries" WHERE EnglishName = ?'
+            statement = "SELECT Id FROM 'Countries' WHERE EnglishName = ?"
             val = (rowList[index],)
             cur.execute(statement, val)
 
@@ -129,7 +129,7 @@ def populate_bars(bar_csv):
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
 
-    with open(bar_csv) as file:
+    with open(bar_csv, encoding='utf-8') as file:
         csvReader = csv.reader(file)
         ##Skip headers
         next(csvReader)
@@ -146,7 +146,7 @@ def populate_bars(bar_csv):
 
             vals = (None, company, beanbarName, ref, reviewDate, cocoapercent, companyLocId, rating, beanType, broadBeanId)
 
-            statement = 'INSERT INTO "Bars" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            statement = "INSERT INTO 'Bars' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             cur.execute(statement, vals)
 
     conn.commit()
@@ -172,6 +172,7 @@ def process_command(command):
 
 
     if commandList:
+        ##Bars Command handling
         if commandList[0] == "bars":
             if len(commandList) > 1:
                 for x in range(1,len(commandList)):
@@ -222,11 +223,7 @@ def process_command(command):
                             placeType = "region"
                             placeName = currParams[1]
 
-            ###query the database
-
-
             if limitSearch:
-
                 statement = 'SELECT b.SpecificBeanBarName, b.Company, sell.EnglishName, b.Rating, b.CocoaPercent, source.EnglishName '
                 statement += 'FROM Bars as b LEFT JOIN Countries as sell ON b.CompanyLocationId = sell.Id '
                 statement += 'LEFT JOIN Countries as source ON b.BroadBeanOriginId = source.Id '
@@ -246,7 +243,6 @@ def process_command(command):
                     else:
                         typeofPlace = "source.Region"
 
-                print(typeofPlace + " " + placeName + " " + sortBy + " " + sortOrder + " " + str(limit))
                 cur.execute(statement.format(typeofPlace, placeName, sortBy, sortOrder, limit))
             else:
                 statement = 'SELECT b.SpecificBeanBarName, b.Company, sell.EnglishName, b.Rating, b.CocoaPercent, source.EnglishName '
@@ -259,17 +255,183 @@ def process_command(command):
             for row in cur:
                 queryList.append(row)
 
-            #handle bars parameters
+        ###Companies command handling
         elif commandList[0] == "companies":
-            pass
-            #handle companies parameters
-            ##Company, company location, requested aggregation
+            possibleParams = ["country", "region", "top", "bottom"]
+            limit = 10
+            sortOrder = "desc"
+            sortBy = "AVG(Bars.Rating)"
+            placeName = ""
+            placeType = ""
+            limitSearch = False
+
+            if len(commandList) > 1:
+                for x in range(1,len(commandList)):
+                    if commandList[x] != "ratings" and commandList[x] != "cocoa" and commandList[x] != "bars_sold":
+                        try:
+                            currParams = commandList[x].split("=")
+                        except:
+                            print("Command Not Recognized: " + command)
+                            return queryList
+                        if currParams[0] in possibleParams:
+                            if len(currParams) != 2:
+                                print("Command Not Recognized: " + command)
+                                return queryList
+                        else:
+                            print("Command Not Recognized: " + command)
+                            return queryList
+
+                for x in range(1,len(commandList)):
+                    if commandList[x] == "ratings":
+                        sortBy = "AVG(Bars.Rating)"
+                    elif commandList[x] == "cocoa":
+                        sortBy = "AVG(Bars.CocoaPercent)"
+                    elif commandList[x] == "bars_sold":
+                        sortBy = "COUNT(Bars.SpecificBeanBarName)"
+                    else:
+                        currParams = commandList[x].split("=")
+                        if currParams[0] == "top":
+                            sortOrder = "desc"
+                            limit = currParams[1]
+                        elif currParams[0] == "bottom":
+                            sortOrder = "asc"
+                            limit = currParams[1]
+                        elif currParams[0] == "country":
+                            limitSearch = True
+                            placeType = "country"
+                            placeName = currParams[1]
+                        elif currParams[0] == "region":
+                            limitSearch = True
+                            placeType = "region"
+                            placeName = currParams[1]
+
+            if limitSearch:
+                statement = 'SELECT Bars.Company, Countries.EnglishName, {} '
+                statement += 'FROM Bars LEFT JOIN Countries ON Bars.CompanyLocationId = Countries.Id '
+                statement += 'GROUP BY Bars.Company '
+                statement += 'HAVING COUNT(Bars.SpecificBeanBarName) > 4 '
+                statement += 'and {} = "{}" '
+                statement += 'ORDER BY {} {} '
+                statement += 'LIMIT {} '
+
+                if placeType == "country":
+                    typeofPlace = "Countries.Alpha2"
+                else:
+                    typeofPlace = "Countries.Region"
+
+                cur.execute(statement.format(sortBy, typeofPlace, placeName, sortBy, sortOrder, limit))
+
+            else:
+                statement = 'SELECT Bars.Company, Countries.EnglishName, {} '
+                statement += 'FROM Bars LEFT JOIN Countries ON Bars.CompanyLocationId = Countries.Id '
+                statement += 'GROUP BY Bars.Company '
+                statement += 'HAVING COUNT(Bars.SpecificBeanBarName) > 4 '
+                statement += 'ORDER BY {} {} '
+                statement += 'LIMIT {} '
+                cur.execute(statement.format(sortBy, sortBy, sortOrder, limit))
+
+            for row in cur:
+                queryList.append(row)
+
         elif commandList[0] == "countries":
-            pass
-            #handle countries parameters
+            possibleParams = ["region", "top", "bottom"]
+            limit = 10
+            sortOrder = "desc"
+            sortBy = "AVG(Bars.Rating)"
+            placeName = ""
+            placeType = "Bars.CompanyLocationId = Countries.Id "
+            limitSearch = False
+            group = "Bars.CompanyLocationId"
+
+
+            if len(commandList) > 1:
+                for x in range(1,len(commandList)):
+                    if commandList[x] != "ratings" and commandList[x] != "cocoa" and commandList[x] != "bars_sold" and commandList[x] != "sellers" and commandList[x] != "sources":
+                        try:
+                            currParams = commandList[x].split("=")
+                        except:
+                            print("Command Not Recognized: " + command)
+                            return queryList
+                        if currParams[0] in possibleParams:
+                            if len(currParams) != 2:
+                                print("Command Not Recognized: " + command)
+                                return queryList
+                        else:
+                            print("Command Not Recognized: " + command)
+                            return queryList
+
+                for x in range(1,len(commandList)):
+                    if commandList[x] == "ratings":
+                        sortBy = "AVG(Bars.Rating)"
+                    elif commandList[x] == "cocoa":
+                        sortBy = "AVG(Bars.CocoaPercent)"
+                    elif commandList[x] == "bars_sold":
+                        sortBy = "COUNT(Bars.SpecificBeanBarName)"
+                    elif commandList[x] == "sellers":
+                        placeType = "Bars.CompanyLocationId = Countries.Id "
+                        group = "Bars.CompanyLocationId"
+                    elif commandList[x] == "sources":
+                        placeType = "Bars.BroadBeanOriginId = Countries.Id"
+                        group = "Bars.BroadBeanOriginId"
+                    else:
+                        currParams = commandList[x].split("=")
+                        if currParams[0] == "top":
+                            sortOrder = "desc"
+                            limit = currParams[1]
+                        elif currParams[0] == "bottom":
+                            sortOrder = "asc"
+                            limit = currParams[1]
+                        elif currParams[0] == "region":
+                            limitSearch = True
+                            placeName = currParams[1]
+
+            if limitSearch:
+                statement = 'SELECT Countries.EnglishName, Countries.Region, {} '
+                statement += 'FROM Bars LEFT JOIN Countries ON {} '
+                statement += 'GROUP BY {} '
+                statement += 'HAVING COUNT(Bars.SpecificBeanBarName) > 4 '
+                statement += 'and Countries.Region = "{}"'
+                statement += 'ORDER BY {} {} '
+                statement += 'LIMIT {}'
+
+                cur.execute(statement.format(sortBy, placeType, group, placeName, sortBy, sortOrder, limit))
+
+            else:
+                statement = 'SELECT Countries.EnglishName, Countries.Region, {} '
+                statement += 'FROM Bars LEFT JOIN Countries ON {} '
+                statement += 'GROUP BY {} '
+                statement += 'HAVING COUNT(Bars.SpecificBeanBarName) > 4 '
+                statement += 'ORDER BY {} {} '
+                statement += 'LIMIT {}'
+
+                cur.execute(statement.format(sortBy, placeType, group, sortBy, sortOrder, limit))
+
+
+
+
+                ########NOT PASSING THE LAST COUNTRIES TEST ##################
+                #############################################################
+                #############################################################
+                #############################################################
+                #############################################################
+                #############################################################
+                #############################################################
+                #############################################################
+                #############################################################
+                #############################################################
+                #############################################################
+                #############################################################
+                #############################################################
+                #############################################################
+                #############################################################
+            for row in cur:
+                queryList.append(row)
+                #handle countries parameters
         elif commandList[0] == "regions":
             pass
             #handle regions parameters
+        elif commandList[0] == "exit":
+            return queryList
         else:
             print("Command Not Recognized: " + command)
             return queryList
