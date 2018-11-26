@@ -163,6 +163,7 @@ def populate_bars(bar_csv):
 
 
 # Part 2: Implement logic to process user commands
+
 ###############################
 ###############################
 ##Parameter - command string entered by user
@@ -215,10 +216,18 @@ def process_command(command):
                         currParams = commandList[x].split("=")
                         if currParams[0] == "top":
                             sortOrder = "desc"
-                            limit = currParams[1]
+                            if not currParams[1].isdigit():
+                                print("Command Not Recognized: " + command)
+                                return queryList
+                            else:
+                                limit = currParams[1]
                         elif currParams[0] == "bottom":
                             sortOrder = "asc"
-                            limit = currParams[1]
+                            if not currParams[1].isdigit():
+                                print("Command Not Recognized: " + command)
+                                return queryList
+                            else:
+                                limit = currParams[1]
                         elif currParams[0] == "sellcountry":
                             limitSearch = True
                             countryType = "sell"
@@ -314,10 +323,18 @@ def process_command(command):
                         currParams = commandList[x].split("=")
                         if currParams[0] == "top":
                             sortOrder = "desc"
-                            limit = currParams[1]
+                            if not currParams[1].isdigit():
+                                print("Command Not Recognized: " + command)
+                                return queryList
+                            else:
+                                limit = currParams[1]
                         elif currParams[0] == "bottom":
                             sortOrder = "asc"
-                            limit = currParams[1]
+                            if not currParams[1].isdigit():
+                                print("Command Not Recognized: " + command)
+                                return queryList
+                            else:
+                                limit = currParams[1]
                         elif currParams[0] == "country":
                             limitSearch = True
                             placeType = "country"
@@ -403,10 +420,18 @@ def process_command(command):
                         currParams = commandList[x].split("=")
                         if currParams[0] == "top":
                             sortOrder = "desc"
-                            limit = currParams[1]
+                            if not currParams[1].isdigit():
+                                print("Command Not Recognized: " + command)
+                                return queryList
+                            else:
+                                limit = currParams[1]
                         elif currParams[0] == "bottom":
                             sortOrder = "asc"
-                            limit = currParams[1]
+                            if not currParams[1].isdigit():
+                                print("Command Not Recognized: " + command)
+                                return queryList
+                            else:
+                                limit = currParams[1]
                         elif currParams[0] == "region":
                             limitSearch = True
                             placeName = currParams[1]
@@ -480,10 +505,18 @@ def process_command(command):
                         currParams = commandList[x].split("=")
                         if currParams[0] == "top":
                             sortOrder = "desc"
-                            limit = currParams[1]
+                            if not currParams[1].isdigit():
+                                print("Command Not Recognized: " + command)
+                                return queryList
+                            else:
+                                limit = currParams[1]
                         elif currParams[0] == "bottom":
                             sortOrder = "asc"
-                            limit = currParams[1]
+                            if not currParams[1].isdigit():
+                                print("Command Not Recognized: " + command)
+                                return queryList
+                            else:
+                                limit = currParams[1]
 
             ##Complete Countries Query
             statement = 'SELECT Countries.Region, {} '
@@ -523,6 +556,7 @@ def load_help_text():
 def interactive_prompt():
     help_text = load_help_text()
     response = ''
+    print('\nEnter "help" to see possible commands or "exit" to quit')
     while response != 'exit':
         response = input('\nEnter a command: ')
 
