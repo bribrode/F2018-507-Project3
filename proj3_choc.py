@@ -6,6 +6,7 @@ import sqlite3
 import csv
 import json
 
+
 # proj3_choc.py
 # You can change anything in this file you want as long as you pass the tests
 # and meet the project requirements! You will need to implement several new
@@ -115,7 +116,7 @@ def check_data_csv(rowList, index):
         return rowList[index][:-1]
     elif index == 5 or index == 8:
         if rowList[index] == "Unknown":
-            return None
+            return "Unknown"
         else:
             conn = sqlite3.connect(DBNAME)
             cur = conn.cursor()
@@ -552,10 +553,32 @@ def load_help_text():
     with open('help.txt') as f:
         return f.read()
 
+def pretty_print(response_tuple):
+    output = ''
+    count = 0
+    for word in response_tuple:
+        if word == None:
+            output += '{:<15}'.format("Unknown")
+        elif len(response_tuple) == 6 and count == 3:
+            output += '{:<10}'.format("%.1f" % word)
+        elif len(response_tuple) == 6 and count == 4:
+            output += '{:<10}'.format("%.0f" % word + "%")
+        elif len(word)>12:
+            output += word[0:12] + '...'
+        else:
+            output += '{:<15}'.format(word)
+        count += 1
+    print(output)
+
+    ###cocoa - percentage (2nd to last or last)
+    ###Ratings - x.x - last or 3rd to last
+    ###Bars = whole number, last
+
 # Part 3: Implement interactive prompt. We've started for you!
 def interactive_prompt():
     help_text = load_help_text()
     response = ''
+
     print('\nEnter "help" to see possible commands or "exit" to quit')
     while response != 'exit':
         response = input('\nEnter a command: ')
@@ -564,7 +587,9 @@ def interactive_prompt():
             print(help_text)
             continue
         else:
-            process_command(response)
+            responseList = process_command(response)
+            for item in responseList:
+                pretty_print(item)
 
     print("Goodbye!")
 
