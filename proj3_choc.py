@@ -21,7 +21,7 @@ COUNTRIESJSON = 'countries.json'
 ##Parameter: database filename
 ##Wipes tables from database if they exist and (re)builds the tables
 def create_db(database):
-    conn = sqlite3.connect(databse)
+    conn = sqlite3.connect(database)
     cur = conn.cursor()
 
     ##WIPE THE DB
@@ -438,8 +438,67 @@ def process_command(command):
 
         ##Regions Command Handling
         elif commandList[0] == "regions":
-            pass
-            #handle regions parameters
+            possibleParams = ["top", "bottom"]
+            limit = 10
+            sortOrder = "desc"
+            sortBy = "AVG(Bars.Rating)"
+            placeType = "Bars.CompanyLocationId = Countries.Id "
+
+            if len(commandList) > 1:
+
+                ##Check to see if all commands entered are valid
+                for x in range(1,len(commandList)):
+                    if commandList[x] != "ratings" and commandList[x] != "cocoa" and commandList[x] != "bars_sold" and commandList[x] != "sellers" and commandList[x] != "sources":
+                        try:
+                            currParams = commandList[x].split("=")
+                        except:
+                            print("Command Not Recognized: " + command)
+                            return queryList
+                        if currParams[0] in possibleParams:
+                            if len(currParams) != 2:
+                                print("Command Not Recognized: " + command)
+                                return queryList
+                        else:
+                            print("Command Not Recognized: " + command)
+                            return queryList
+
+                ##Assign variables representing entered commands
+                for x in range(1,len(commandList)):
+                    if commandList[x] == "ratings":
+                        sortBy = "AVG(Bars.Rating)"
+                    elif commandList[x] == "cocoa":
+                        sortBy = "AVG(Bars.CocoaPercent)"
+                    elif commandList[x] == "bars_sold":
+                        sortBy = "COUNT(Bars.SpecificBeanBarName)"
+                    elif commandList[x] == "sellers":
+                        placeType = "Bars.CompanyLocationId = Countries.Id "
+                        group = "Bars.CompanyLocationId"
+                    elif commandList[x] == "sources":
+                        placeType = "Bars.BroadBeanOriginId = Countries.Id"
+                        group = "Bars.BroadBeanOriginId"
+                    else:
+                        currParams = commandList[x].split("=")
+                        if currParams[0] == "top":
+                            sortOrder = "desc"
+                            limit = currParams[1]
+                        elif currParams[0] == "bottom":
+                            sortOrder = "asc"
+                            limit = currParams[1]
+
+            ##Complete Countries Query
+            statement = 'SELECT Countries.Region, {} '
+            statement += 'FROM Bars JOIN Countries ON {} '
+            statement += 'GROUP BY Countries.Region '
+            statement += 'HAVING COUNT(Bars.SpecificBeanBarName) > 4 '
+            statement += 'ORDER BY {} {} '
+            statement += 'LIMIT {}'
+
+            cur.execute(statement.format(sortBy, placeType, sortBy, sortOrder, limit))
+
+            for row in cur:
+                queryList.append(row)
+
+
         elif commandList[0] == "exit":
             return queryList
         else:
@@ -447,10 +506,10 @@ def process_command(command):
             return queryList
     else:
         return queryList
-
-
-    for item in queryList:
-        print(item)
+    #
+    #
+    # for item in queryList:
+    #     print(item)
 
     conn.close()
     return queryList
