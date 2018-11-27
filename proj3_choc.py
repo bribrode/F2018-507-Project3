@@ -197,14 +197,14 @@ def process_command(command):
                         try:
                             currParams = commandList[x].split("=")
                         except:
-                            print("Command Not Recognized: " + command)
+                            print("Command not Recognized: " + command)
                             return queryList
                         if currParams[0] in possibleParams:
                             if len(currParams) != 2:
-                                print("Command Not Recognized: " + command)
+                                print("Command not Recognized: " + command)
                                 return queryList
                         else:
-                            print("Command Not Recognized: " + command)
+                            print("Command not Recognized: " + command)
                             return queryList
 
                 ##Assign variables to represent each command entered
@@ -218,14 +218,14 @@ def process_command(command):
                         if currParams[0] == "top":
                             sortOrder = "desc"
                             if not currParams[1].isdigit():
-                                print("Command Not Recognized: " + command)
+                                print("Command not Recognized: " + command)
                                 return queryList
                             else:
                                 limit = currParams[1]
                         elif currParams[0] == "bottom":
                             sortOrder = "asc"
                             if not currParams[1].isdigit():
-                                print("Command Not Recognized: " + command)
+                                print("Command not Recognized: " + command)
                                 return queryList
                             else:
                                 limit = currParams[1]
@@ -302,14 +302,14 @@ def process_command(command):
                         try:
                             currParams = commandList[x].split("=")
                         except:
-                            print("Command Not Recognized: " + command)
+                            print("Command not Recognized: " + command)
                             return queryList
                         if currParams[0] in possibleParams:
                             if len(currParams) != 2:
-                                print("Command Not Recognized: " + command)
+                                print("Command not Recognized: " + command)
                                 return queryList
                         else:
-                            print("Command Not Recognized: " + command)
+                            print("Command not Recognized: " + command)
                             return queryList
 
                 ##Assign variables representing entered commands
@@ -325,14 +325,14 @@ def process_command(command):
                         if currParams[0] == "top":
                             sortOrder = "desc"
                             if not currParams[1].isdigit():
-                                print("Command Not Recognized: " + command)
+                                print("Command not Recognized: " + command)
                                 return queryList
                             else:
                                 limit = currParams[1]
                         elif currParams[0] == "bottom":
                             sortOrder = "asc"
                             if not currParams[1].isdigit():
-                                print("Command Not Recognized: " + command)
+                                print("Command not Recognized: " + command)
                                 return queryList
                             else:
                                 limit = currParams[1]
@@ -393,14 +393,14 @@ def process_command(command):
                         try:
                             currParams = commandList[x].split("=")
                         except:
-                            print("Command Not Recognized: " + command)
+                            print("Command not Recognized: " + command)
                             return queryList
                         if currParams[0] in possibleParams:
                             if len(currParams) != 2:
-                                print("Command Not Recognized: " + command)
+                                print("Command not Recognized: " + command)
                                 return queryList
                         else:
-                            print("Command Not Recognized: " + command)
+                            print("Command not Recognized: " + command)
                             return queryList
 
                 ##Assign variables representing entered commands
@@ -422,14 +422,14 @@ def process_command(command):
                         if currParams[0] == "top":
                             sortOrder = "desc"
                             if not currParams[1].isdigit():
-                                print("Command Not Recognized: " + command)
+                                print("Command not Recognized: " + command)
                                 return queryList
                             else:
                                 limit = currParams[1]
                         elif currParams[0] == "bottom":
                             sortOrder = "asc"
                             if not currParams[1].isdigit():
-                                print("Command Not Recognized: " + command)
+                                print("Command not Recognized: " + command)
                                 return queryList
                             else:
                                 limit = currParams[1]
@@ -478,14 +478,14 @@ def process_command(command):
                         try:
                             currParams = commandList[x].split("=")
                         except:
-                            print("Command Not Recognized: " + command)
+                            print("Command not Recognized: " + command)
                             return queryList
                         if currParams[0] in possibleParams:
                             if len(currParams) != 2:
-                                print("Command Not Recognized: " + command)
+                                print("Command not Recognized: " + command)
                                 return queryList
                         else:
-                            print("Command Not Recognized: " + command)
+                            print("Command not Recognized: " + command)
                             return queryList
 
                 ##Assign variables representing entered commands
@@ -507,14 +507,14 @@ def process_command(command):
                         if currParams[0] == "top":
                             sortOrder = "desc"
                             if not currParams[1].isdigit():
-                                print("Command Not Recognized: " + command)
+                                print("Command not Recognized: " + command)
                                 return queryList
                             else:
                                 limit = currParams[1]
                         elif currParams[0] == "bottom":
                             sortOrder = "asc"
                             if not currParams[1].isdigit():
-                                print("Command Not Recognized: " + command)
+                                print("Command not Recognized: " + command)
                                 return queryList
                             else:
                                 limit = currParams[1]
@@ -536,14 +536,11 @@ def process_command(command):
         elif commandList[0] == "exit":
             return queryList
         else:
-            print("Command Not Recognized: " + command)
+            print("Command not Recognized: " + command)
             return queryList
     else:
         return queryList
-    #
-    #
-    # for item in queryList:
-    #     print(item)
+
 
     conn.close()
     return queryList
@@ -553,7 +550,7 @@ def load_help_text():
     with open('help.txt') as f:
         return f.read()
 
-def pretty_print(response_tuple):
+def pretty_print(response_tuple, cocoa, bars_sold):
     output = ''
     count = 0
     for word in response_tuple:
@@ -563,6 +560,13 @@ def pretty_print(response_tuple):
             output += '{:<10}'.format("%.1f" % word)
         elif len(response_tuple) == 6 and count == 4:
             output += '{:<10}'.format("%.0f" % word + "%")
+        elif len(response_tuple) != 6 and count == len(response_tuple)-1:
+            if cocoa:
+                output += '{:<10}'.format("%.0f" % word + "%")
+            elif bars_sold:
+                output += '{:<10}'.format(word)
+            else:
+                output += '{:<10}'.format("%.1f" % word)
         elif len(word)>12:
             output += word[0:12] + '...'
         else:
@@ -578,7 +582,7 @@ def pretty_print(response_tuple):
 def interactive_prompt():
     help_text = load_help_text()
     response = ''
-
+    currCommands = []
     print('\nEnter "help" to see possible commands or "exit" to quit')
     while response != 'exit':
         response = input('\nEnter a command: ')
@@ -588,8 +592,16 @@ def interactive_prompt():
             continue
         else:
             responseList = process_command(response)
+            currCommands = response.split()
+            cocoa = False
+            bars_sold = False
+            for cmd in currCommands:
+                if cmd == "cocoa":
+                    cocoa = True
+                elif cmd == "bars_sold":
+                    bars_sold = True
             for item in responseList:
-                pretty_print(item)
+                pretty_print(item, cocoa, bars_sold)
 
     print("Goodbye!")
 
